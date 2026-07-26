@@ -33,3 +33,18 @@ Desktop.ini
 # PRDs
 PRD.md
 frontendPRD.md
+
+# Sensitive Autopilot Local Data and Sessions
+backend/session.session
+backend/session.session-journal
+backend/activity_log.json
+backend/autopilot_state.json
+backend/data/contacts.json
+backend/data/relationships.json
+backend/large_test.json
+backend/bad.txt
+backend/test.csv
+backend/test.json
+backend/test_upload.py
+backend/scratch/
+

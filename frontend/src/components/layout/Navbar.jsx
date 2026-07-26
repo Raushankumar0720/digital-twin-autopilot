@@ -1,7 +1,40 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Shield, Radio } from "lucide-react";
+import { api } from "../../lib/api";
 
 export default function Navbar() {
+  const [profile, setProfile] = useState({ name: "Raushan Kumar", initials: "RK" });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const config = await api.getConfig();
+        if (config && config.name) {
+          setProfile({
+            name: config.name,
+            initials: config.initials || "RK"
+          });
+        }
+      } catch (err) {
+        console.warn("Failed fetching profile name from API. Using defaults.");
+      }
+    };
+
+    fetchProfile();
+
+    const handleConfigUpdate = (e) => {
+      if (e.detail && e.detail.name) {
+        setProfile({
+          name: e.detail.name,
+          initials: e.detail.initials || "RK"
+        });
+      }
+    };
+
+    window.addEventListener("configUpdated", handleConfigUpdate);
+    return () => window.removeEventListener("configUpdated", handleConfigUpdate);
+  }, []);
+
   return (
     <header className="bmw-navbar">
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -77,13 +110,13 @@ export default function Navbar() {
               color: "var(--bmw-ink)",
             }}
           >
-            NK
+            {profile.initials}
           </div>
           <span
             className="bmw-label-uppercase"
             style={{ fontSize: "12px", color: "var(--bmw-ink)" }}
           >
-            Nitish Kumar
+            {profile.name}
           </span>
         </div>
       </div>

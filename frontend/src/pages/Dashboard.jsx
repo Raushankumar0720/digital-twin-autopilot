@@ -114,10 +114,31 @@ export default function Dashboard() {
   };
 
   const handleConfigChange = async (key, val) => {
-    const updatedConfig = { ...config, [key]: parseInt(val) || val };
+    const isNumeric = key === "formality_level" || key === "reply_delay_min" || key === "reply_delay_max";
+    const parsedVal = isNumeric ? (parseInt(val) || 0) : val;
+    const updatedConfig = { ...config, [key]: parsedVal };
     setConfig(updatedConfig);
+
+    if (key === "name") {
+      const parts = val.trim().split(" ");
+      let initials = "RK";
+      if (parts.length >= 2) {
+        initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.length === 1 && parts[0]) {
+        initials = parts[0].substring(0, 2).toUpperCase();
+      }
+      window.dispatchEvent(new CustomEvent("configUpdated", {
+        detail: { name: val, initials }
+      }));
+    }
+
     try {
-      await api.updateConfig(updatedConfig);
+      const savedConfig = await api.updateConfig(updatedConfig);
+      if (savedConfig && savedConfig.name) {
+        window.dispatchEvent(new CustomEvent("configUpdated", {
+          detail: { name: savedConfig.name, initials: savedConfig.initials }
+        }));
+      }
     } catch (err) {
       console.error("Failed updating config on server", err);
     }
@@ -274,6 +295,30 @@ export default function Dashboard() {
               transition: "opacity 0.2s ease",
             }}
           >
+            {/* Autopilot Owner Name */}
+            <div>
+              <label className="bmw-label-uppercase" style={{ display: "block", fontSize: "11px", marginBottom: "6px" }}>
+                Autopilot Owner Name
+              </label>
+              <input
+                type="text"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  fontSize: "13px",
+                  fontFamily: "inherit",
+                  backgroundColor: "var(--bmw-surface-soft)",
+                  border: "1px solid var(--bmw-hairline)",
+                  color: "var(--bmw-ink)",
+                  outline: "none",
+                  boxSizing: "border-box"
+                }}
+                value={config.name || ""}
+                onChange={(e) => handleConfigChange("name", e.target.value)}
+                placeholder="e.g. Raushan Kumar"
+              />
+            </div>
+
             {/* Formality level */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>

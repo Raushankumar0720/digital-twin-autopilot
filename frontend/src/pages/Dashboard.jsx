@@ -84,8 +84,19 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleMasterToggle = () => {
-    setIsMasterOn(!isMasterOn);
+  const handleMasterToggle = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/autopilot/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      setIsMasterOn(data.is_active);
+    } catch (err) {
+      console.error("Failed to toggle autopilot:", err);
+      // Fallback: toggle locally if backend is unreachable
+      setIsMasterOn(!isMasterOn);
+    }
   };
 
   const handlePlatformToggle = async (platform) => {

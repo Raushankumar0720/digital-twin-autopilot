@@ -112,6 +112,46 @@ def toggle_platform_path(platform: str):
 def get_feed(limit: int = 50):
     return {"activity": read_activity(limit)}
 
+class UserConfigRequest(BaseModel):
+    name: str
+    formality_level: int = 3
+    reply_delay_min: int = 30
+    reply_delay_max: int = 120
+
+@app.get("/api/config")
+def get_config():
+    state = read_state()
+    config = state.get("config", {
+        "name": "Raushan Kumar",
+        "initials": "RK",
+        "formality_level": 3,
+        "reply_delay_min": 30,
+        "reply_delay_max": 120
+    })
+    return config
+
+@app.post("/api/config")
+def update_config(req: UserConfigRequest):
+    state = read_state()
+    # Auto-generate initials from the name
+    parts = req.name.strip().split()
+    if len(parts) >= 2:
+        initials = (parts[0][0] + parts[-1][0]).upper()
+    elif len(parts) == 1 and parts[0]:
+        initials = parts[0][:2].upper()
+    else:
+        initials = "RK"
+
+    state["config"] = {
+        "name": req.name,
+        "initials": initials,
+        "formality_level": req.formality_level,
+        "reply_delay_min": req.reply_delay_min,
+        "reply_delay_max": req.reply_delay_max
+    }
+    write_state(state)
+    return state["config"]
+
 # ---------- CONTACTS & WHITELIST ----------
 @app.get("/api/contacts")
 def get_contacts():

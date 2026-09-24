@@ -18,40 +18,43 @@ Allows you to safely enter your API credentials, phone number, and Groq LLM API 
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Event Flow
 
-```
-                       ┌────────────────────────┐
-                       │  Frontend (React+Vite) │
-                       │    (Port 5173 / UI)    │
-                       └───────────┬────────────┘
-                                   │ (REST API)
-                                   ▼
-                       ┌────────────────────────┐
-                       │  Backend API (FastAPI) │
-                       │    (Port 8000 / API)   │
-                       └───────────┬────────────┘
-                                   │
-             ┌─────────────────────┴─────────────────────┐
-             ▼ (Reads/Writes State)                      ▼ (Analyzes/Generates)
-  ┌──────────────────────┐                     ┌──────────────────────┐
-  │ Local JSON Databases │                     │ Slang Engine (Groq)  │
-  │ (configs/logs/state) │                     │ & Llama-3 Autopilot  │
-  └──────────────────────┘                     └──────────────────────┘
-             ▲                                           ▲
-             │ (Validates/Controls)                      │ (Triggers replies)
-             └─────────────────────┬─────────────────────┘
-                                   │
-                       ┌────────────────────────┐
-                       │ Telegram Client Daemon │
-                       │   (Telethon Client)    │
-                       └────────────────────────┘
-```
+The system is designed around an asynchronous, decoupled event-driven pipeline ensuring low latency and non-blocking I/O across communication channels:
 
-The system is split into three main parts:
-1. **Frontend (Vite + React 18)**: A single-page dashboard designed with a BMW-inspired corporate color palette (cream canvas, corporate blue, navy panels). It talks to the backend via REST endpoints.
-2. **Backend API (FastAPI)**: Manages and exposes configuration toggles, reads/writes autopilot states, and handles activity logs.
-3. **Autopilot Daemon (Telethon)**: A persistent background client that listens directly to your incoming Telegram messages, evaluates relationship scores, checks for slangs using a custom matching engine, routes queries to the Groq Llama-3 model, and automatically responds on your behalf.
+`mermaid
+flowchart LR
+    A([Telegram Event / User]) -->|1. Inbound Webhook / Message| B[FastAPI Gateway]
+    B -->|2. Async Event Dispatch| C[Background Worker Daemon]
+    C -->|3. Persona & Slang Analysis| D[Groq LPU / LLM Engine]
+    D -->|4. Synthesized Stream Response| C
+    C -->|5. Simulated Typing & Dispatch| E([Client / Telegram API])
+
+    subgraph State & Management Plane
+        F[React + Vite Console] <-->|REST API & Real-time Logs| B
+        C <-->|Sync State & Telemetry| G[(State & Contacts DB)]
+    end
+
+    style A fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff
+    style B fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
+    style C fill:#4f46e5,stroke:#4338ca,stroke-width:2px,color:#fff
+    style D fill:#dc2626,stroke:#b91c1c,stroke-width:2px,color:#fff
+    style E fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff
+    style F fill:#d97706,stroke:#b45309,stroke-width:2px,color:#fff
+    style G fill:#475569,stroke:#334155,stroke-width:2px,color:#fff
+`
+
+### Event Processing Pipeline:
+1. **Telegram Ingestion**: Incoming messages and metadata are received via the Telethon client / Telegram MTProto protocol.
+2. **FastAPI Gateway & Routing**: Handles configuration toggles, rate limits, contact whitelist/blacklist policies, and state controls.
+3. **Async Autopilot Worker**: Evaluates relationship scores, calculates realistic typing delays, and injects user-specific slang/vocabulary through a contextual matching engine.
+4. **Groq LPU Inference**: Leverages Groq's high-speed inference engine (Llama-3) for ultra-low latency response generation matching the user's authentic tone.
+5. **Client Dispatch**: Simulates organic human typing intervals before transmitting the synthetic response back to the client.
+
+### Core Architecture Components:
+* **Frontend Console (Vite + React 18)**: Single-page control center featuring telemetry monitoring, manual overrides, response delays, and whitelist controls.
+* **Backend API (FastAPI)**: Asynchronous REST service managing state persistence, metrics, and authentication.
+* **Autopilot Daemon (Telethon / Asyncio Worker)**: Persistent background daemon with custom persona matching, sentiment weighting, and Groq LLM orchestration.
 
 ---
 
@@ -65,7 +68,7 @@ The system is split into three main parts:
 ### Step 1: Clone and Set up Environment Variables
 1. Clone the repository and navigate to the project directory:
    ```bash
-   cd runtimerebels
+   cd digital-twin-autopilot
    ```
 2. Duplicate `.env.example` to create your local `.env` file:
    ```bash
